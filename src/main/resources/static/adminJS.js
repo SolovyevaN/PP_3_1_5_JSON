@@ -4,24 +4,32 @@ const URL_INFO = "http://localhost:8080/admin";
 const roleList = []
 $(document).ready( function () {
     getAllUsers();
-    fetch(URL + '/roles')
+    fetch(URL + '/admin')
         .then(response => response.json())
-        .then(roles => {
-            roles.forEach(role => {
-                roleList.push(role)
-            })
+        .then(users => {
+            users.forEach(user => {
+                user.roles.forEach(role => {
+                    if (!roleList.some(r => r.id === role.id)) {
+                        roleList.push(role);
+                    }
+                });
+            });
         })
+        .catch(error => console.error("Ошибка загрузки ролей:", error));
+
 })
 
-function showRoles(form) {
+function showRoles(form, selectedRoles = []) {
     $(`[name="roles"]`, form).empty();
     roleList.forEach(role => {
-        let option = `<option value="${role.id}">
-                                 ${role.name.replace(/^ROLE_/, '')}
-                            </option>`
-        $(`[name="roles"]`, form).append(option)
-    })
+        let isSelected = selectedRoles.some(r => r.id === role.id) ? "selected" : "";
+        let option = `<option value="${role.id}" ${isSelected}>
+                         ${role.name.replace(/^ROLE_/, '')}
+                      </option>`;
+        $(`[name="roles"]`, form).append(option);
+    });
 }
+
 
 function getRole(form) {
     let role = []
@@ -37,7 +45,7 @@ function getRole(form) {
 function getAllUsers() {
     const usersTable = $('.users-table')
     usersTable.empty()
-    fetch(URL + '/user')
+    fetch(URL + '/admin')
         .then(response => response.json())
         .then(users => {
             users.forEach(user => {
@@ -74,13 +82,13 @@ function addUser(){
 
         let addUser = JSON.stringify({
             email:  $(`[name="email"]` , newUserForm).val(),
-            firstName:  $(`[name="firstName"]` , newUserForm).val(),
-            lastName:  $(`[name="lastName"]` , newUserForm).val(),
+            name:  $(`[name="name"]` , newUserForm).val(),
+            surname:  $(`[name="surname"]` , newUserForm).val(),
             age:  $(`[name="age"]` , newUserForm).val(),
             password:  $(`[name="password"]` , newUserForm).val(),
             roles: getRole(newUserForm)
         })
-        fetch(URL + '/users', {
+        fetch(URL + '/admin/addUser', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -104,8 +112,8 @@ function showModal(form, modal, id) {
         response.json().then(user => {
             $(`[name="email"]`,form).val(user.email)
             $(`[name="id"]`,form).val(user.id)
-            $(`[name="firstName"]`,form).val(user.firstName)
-            $(`[name="lastName"]`,form).val(user.lastName)
+            $(`[name="name"]`,form).val(user.name)
+            $(`[name="surname"]`,form).val(user.surname)
             $(`[name="age"]`,form).val(user.age)
             $(`[name="password"]`,form).val(user.password)
         })
@@ -122,14 +130,14 @@ function editModal(id) {
         let newUser = JSON.stringify({
             id: $(`[name="id"]` , editForm).val(),
             email:  $(`[name="email"]` , editForm).val(),
-            firstName:  $(`[name="firstName"]` , editForm).val(),
-            lastName:  $(`[name="lastName"]` , editForm).val(),
+            name:  $(`[name="name"]` , editForm).val(),
+            surname:  $(`[name="surname"]` , editForm).val(),
             age:  $(`[name="age"]` , editForm).val(),
             password:  $(`[name="password"]` , editForm).val(),
             roles: getRole(editForm)
         })
-        fetch(URL + '/users', {
-            method: 'PATCH',
+        fetch(URL + `/admin/updateUser/${id}`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -145,23 +153,29 @@ function editModal(id) {
 }
 
 function deleteModal(id) {
-    const deleteModal = new bootstrap.Modal($('.delete-modal'))
-    const deleteForm = $('#delete-form')[0]
-    showModal(deleteForm, deleteModal, id)
+    const deleteModal = new bootstrap.Modal(document.querySelector('.delete-modal')); // Исправил
+    const deleteForm = document.querySelector('#delete-form'); // Исправил
+
+    showModal(deleteForm, deleteModal, id);
+
     deleteForm.addEventListener('submit', (ev) => {
-        ev.preventDefault()
-        ev.stopPropagation()
-        fetch(URL + `/users/${$(`[name="id"]` , deleteForm).val()}`, {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        fetch(URL + `/admin/deleteUser/${id}`, {
             method: 'DELETE'
-        }).then(r => {
-            deleteModal.hide()
-            $('#users-table-tab')[0].click()
-            if(!r.ok) {
-                alert("Deleting process failed!!")
-            }
         })
-    })
+            .then(r => {
+                deleteModal.hide();
+                document.querySelector('#users-table-tab').click();
+                if (!r.ok) {
+                    alert("Deleting process failed!!");
+                }
+            })
+            .catch(error => console.error("Error deleting user:", error)); // Добавил обработку ошибок
+    });
 }
+
 
 async function getPage() {
     try {

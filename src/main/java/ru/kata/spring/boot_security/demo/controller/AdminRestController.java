@@ -7,6 +7,8 @@ import ru.kata.spring.boot_security.demo.dto.UserDto;
 import ru.kata.spring.boot_security.demo.exception.UserNotFindExeption;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.service.UserService;
+
+import java.security.Principal;
 import java.util.List;
 
 
@@ -58,4 +60,10 @@ public class AdminRestController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
+    @GetMapping("/test")
+    public ResponseEntity<?> testAuth(Principal principal) {
+        return ResponseEntity.ok("Authenticated as: " + (principal != null ? principal.getName() : "Anonymous"));
+    }
+
 }

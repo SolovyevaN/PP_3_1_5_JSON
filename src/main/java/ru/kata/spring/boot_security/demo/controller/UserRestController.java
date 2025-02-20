@@ -10,7 +10,7 @@ import java.security.Principal;
 
 
 @RestController
-@RequestMapping("api/user")
+@RequestMapping("/api/user")
 public class UserRestController {
     private final UserService userService;
 
